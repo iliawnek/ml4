@@ -8,6 +8,7 @@ import multiprocessing as mp
 
 X = []
 T = []
+feature_names = []
 
 with open('epi_stroma_data.tsv', 'rb') as tsv:
     i = 0
@@ -15,6 +16,8 @@ with open('epi_stroma_data.tsv', 'rb') as tsv:
         if i != 0:
             X.append([float(x) for x in line[1:]])
             T.append([int(line[0])])
+        else:
+            feature_names = line
         i += 1
 
 X = np.array(X)
@@ -29,31 +32,31 @@ fold_size = data_point_count / fold_count
 # K-nearest neighbours + cross-validation #
 ###########################################
 
-# def classify_knn(X, T, x_new, K):
-#     # compute distance-class mappings
-#     distances = []
-#     for i, x in enumerate(X):
-#         distances.append((np.linalg.norm(x_new - X[i]), T[i][0]))
-#
-#     # find most popular class in K-nearest neighbours
-#     distances = sorted(distances, key=lambda d: d[0])
-#     epi_votes = 0
-#     stroma_votes = 0
-#     for k in range(K):
-#         if distances[k][1] == 1:
-#             epi_votes += 1
-#         else:
-#             stroma_votes += 1
-#     if epi_votes >= stroma_votes:
-#         return 1
-#     else:
-#         return 2
-#
-# min_K = 200
-# max_K = 200  # K from 1 to max_K
-# step_K = 10
-# errors = {}
-#
+def classify_knn(X, T, x_new, K):
+    # compute distance-class mappings
+    distances = []
+    for i, x in enumerate(X):
+        distances.append((np.linalg.norm(x_new - X[i]), T[i][0]))
+
+    # find most popular class in K-nearest neighbours
+    distances = sorted(distances, key=lambda d: d[0])
+    epi_votes = 0
+    stroma_votes = 0
+    for k in range(K):
+        if distances[k][1] == 1:
+            epi_votes += 1
+        else:
+            stroma_votes += 1
+    if epi_votes >= stroma_votes:
+        return 1
+    else:
+        return 2
+
+min_K = 200
+max_K = 200  # K from 1 to max_K
+step_K = 10
+errors = {}
+
 # for K in range(min_K, max_K + 1, step_K):
 #     error_count = 0
 #     for fold in range(fold_count):
@@ -125,8 +128,6 @@ def bayes(X, T):
             class_pars['prior'] = 1.0 * len(data_pos) / len(X_train)
             parameters[cl] = class_pars
 
-        predictions = np.zeros((400,))
-
         def count_error(i):
             classification = classify_bayes(X_train, T_train, X_fold[i], parameters)
             if classification != T_fold[i][0]:
@@ -143,19 +144,25 @@ def bayes(X, T):
     average_error = float(error_count) / float(fold_count)
     return average_error
 
-# bayes(X, T)
-
 #####################
 # Feature selection #
 #####################
 
-# Calculate performance of each feature in isolation.
+# get best features
+
 feature_errors = []
 for i in range(feature_count):
-    feature = X[:,[i]]
+    feature = X[:, [i]]
     feature_errors.append((i, bayes(feature, T)))
-
 feature_errors = sorted(feature_errors, key=lambda d: d[1])
-import pprint
-pp = pprint.PrettyPrinter()
-pp.pprint(feature_errors)
+
+# for j in range(1, feature_count + 1):
+#     best_features = [x[0] for x in feature_errors[:j]]
+#     X_best = X[:, best_features]
+#
+#     print 'average error for top %d features = %f' % (j, bayes(X_best, T))
+
+selected_features = [x[0] for x in [feature_errors[i] for i in [0, 1, 24]]]
+print selected_features
+X_best = X[:, selected_features]
+print bayes(X_best, T)
