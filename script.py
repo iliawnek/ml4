@@ -150,19 +150,34 @@ def bayes(X, T):
 
 # get best features
 
-feature_errors = []
-for i in range(feature_count):
-    feature = X[:, [i]]
-    feature_errors.append((i, bayes(feature, T)))
-feature_errors = sorted(feature_errors, key=lambda d: d[1])
+# feature_errors = []
+# for i in range(feature_count):
+#     print i
+#     feature = X[:, [i]]
+#     epi_indices = np.where(T == 1)[0]
+#     stroma_indices = np.where(T == 2)[0]
+#     epi_greater = 0.0
+#     stroma_greater = 0.0
+#     for epi in epi_indices:
+#         for stroma in stroma_indices:
+#             if feature[epi][0] > feature[stroma][0]:
+#                 epi_greater += 1.0
+#             elif feature[epi][0] < feature[stroma][0]:
+#                 stroma_greater += 1.0
+#     performance = abs(((epi_greater / (epi_greater + stroma_greater)) - 0.5) * 2.0)
+#     feature_errors.append((i, performance))
+# feature_errors = sorted(feature_errors, key=lambda d: d[1])
+
+# feature_errors = [109, 102, 0, 111, 11, 57, 54, 101, 107, 105, 6, 15, 89, 18, 100, 97, 27, 60, 45, 110, 1, 59, 56, 58, 55, 29, 13, 51, 28, 47, 24, 108, 46, 96, 10, 25, 26, 2, 53, 52, 8, 106, 93, 19, 103, 3, 20, 99, 36, 17, 30, 91, 7, 85, 94, 98, 5, 37, 72, 16, 43, 42, 69, 92, 75, 32, 64, 71, 38, 48, 63, 77, 82, 78, 76, 73, 4, 44, 12, 90, 39, 88, 62, 86, 41, 49, 70, 84, 50, 74, 104, 23, 40, 31, 83, 9, 66, 35, 87, 34, 14, 33, 21, 79, 61, 65, 67, 80, 81, 22, 68, 95]
+
+# feature_errors = []
+# for i in range(feature_count):
+#     feature = X[:, [i]]
+#     feature_errors.append((i, bayes(feature, T)))
+# feature_errors = sorted(feature_errors, key=lambda d: d[1])
 
 # for j in range(1, feature_count + 1):
-#     best_features = [x[0] for x in feature_errors[:j]]
+#     best_features = feature_errors[:j]
 #     X_best = X[:, best_features]
 #
 #     print 'average error for top %d features = %f' % (j, bayes(X_best, T))
-
-selected_features = [x[0] for x in [feature_errors[i] for i in [0, 1, 24]]]
-print selected_features
-X_best = X[:, selected_features]
-print bayes(X_best, T)
