@@ -1,6 +1,5 @@
 import numpy as np
 import csv
-import multiprocessing as mp
 
 #############
 # Load data #
@@ -55,38 +54,51 @@ def classify_knn(X, T, x_new, K):
 min_K = 200
 max_K = 200  # K from 1 to max_K
 step_K = 10
-errors = {}
 
-# for K in range(min_K, max_K + 1, step_K):
-#     error_count = 0
-#     for fold in range(fold_count):
-#         print 'K = %d, fold = %d' % (K, fold + 1)
-#
-#         # divide folds into validation and training data
-#         lower = fold_size * fold
-#         upper = fold_size * (fold + 1)
-#         X_fold = X[lower:upper]
-#         X_train = np.delete(X, np.arange(lower, upper, 1), 0)
-#         T_fold = T[lower:upper]
-#         T_train = np.delete(T, np.arange(lower, upper, 1), 0)
-#
-#         def count_error(i):
-#             classification = classify_knn(X_train, T_train, X_fold[i], K)
-#             if classification != T_fold[i][0]:
-#                 return 1
-#             return 0
-#
-#         pool = mp.Pool(4)
-#         results = pool.map(count_error, range(fold_size))
-#         error_count += sum(results)
-#
-#     average_error = float(error_count) / float(fold_count)
-#     print '---'
-#     print 'K = %d, error = %f' % (K, average_error)
-#     print '---'
-#     errors[K] = average_error
-#
-# print errors
+for K in range(min_K, max_K + 1, step_K):
+    true_epi = 0
+    true_stroma = 0
+    false_epi = 0
+    false_stroma = 0
+
+    for fold in range(fold_count):
+        print 'K = %d, fold = %d' % (K, fold + 1)
+
+        # divide folds into validation and training data
+        lower = fold_size * fold
+        upper = fold_size * (fold + 1)
+        X_fold = X[lower:upper]
+        X_train = np.delete(X, np.arange(lower, upper, 1), 0)
+        T_fold = T[lower:upper]
+        T_train = np.delete(T, np.arange(lower, upper, 1), 0)
+
+        for i in range(fold_size):
+            classification = classify_knn(X_train, T_train, X_fold[i], K)
+            actual_class = T_fold[i][0]
+            if classification == actual_class:
+                if classification == 1:
+                    true_epi += 1
+                elif classification == 2:
+                    true_stroma += 1
+            elif classification != actual_class:
+                if classification == 1:
+                    false_epi += 1
+                elif classification == 2:
+                    false_stroma += 1
+
+    error_count = false_epi + false_stroma
+    average_error = (float(error_count) / float(fold_count)) / float(fold_size)
+    tp = float(true_epi) / float(fold_count)
+    tn = float(true_stroma) / float(fold_count)
+    fp = float(false_epi) / float(fold_count)
+    fn = float(false_stroma) / float(fold_count)
+    mcc = ((tp*tn)-(fp*fn)) / (((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))**(0.5))
+    print '---'
+    print 'K = %d' % K
+    print '0/1 loss = %f' % average_error
+    print 'MCC = %f' % (mcc)
+    print '---'
+
 
 ##########################
 # Naive Bayes classifier #
@@ -107,7 +119,10 @@ def bayes(X, T):
         else:
             return 2
 
-    error_count = 0
+    true_epi = 0
+    true_stroma = 0
+    false_epi = 0
+    false_stroma = 0
 
     for fold in range(fold_count):
         # divide folds into validation and training data
@@ -128,21 +143,35 @@ def bayes(X, T):
             class_pars['prior'] = 1.0 * len(data_pos) / len(X_train)
             parameters[cl] = class_pars
 
-        def count_error(i):
-            classification = classify_bayes(X_train, T_train, X_fold[i], parameters)
-            if classification != T_fold[i][0]:
-                return 1
-            return 0
-
-        # pool = mp.Pool(4)
-        # results = pool.map(count_error, range(fold_size))
-        # error_count += sum(results)
-
         for i in range(fold_size):
-            error_count += count_error(i)
+            classification = classify_bayes(X_train, T_train, X_fold[i], parameters)
+            actual_class = T_fold[i][0]
+            if classification == actual_class:
+                if classification == 1:
+                    true_epi += 1
+                elif classification == 2:
+                    true_stroma += 1
+            elif classification != actual_class:
+                if classification == 1:
+                    false_epi += 1
+                elif classification == 2:
+                    false_stroma += 1
 
-    average_error = float(error_count) / float(fold_count)
+
+    error_count = false_epi + false_stroma
+    average_error = (float(error_count) / float(fold_count)) / float(fold_size)
+    tp = float(true_epi) / float(fold_count)
+    tn = float(true_stroma) / float(fold_count)
+    fp = float(false_epi) / float(fold_count)
+    fn = float(false_stroma) / float(fold_count)
+    mcc = ((tp*tn)-(fp*fn)) / (((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn))**(0.5))
+    print '---'
+    print 'average error = %f%%' % average_error
+    print 'MCC = %f' % (mcc)
+    print '---'
     return average_error
+
+# bayes(X, T)
 
 #####################
 # Feature selection #
